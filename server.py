@@ -127,4 +127,4 @@ def cuda_orb_match(input_img_path, reference_img_path):
 #         grayscale.save(filepath)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
