@@ -14,23 +14,16 @@ cv.cuda.setDevice(0)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    print("yesssssssssss1111111")
-    print(cv.cuda.getCudaEnabledDeviceCount())
     return "Server works!!!"
 
 @app.route('/process', methods=['GET', 'POST'])
 def helper():
-    print("inside server")
     references_folder= "/home/ubuntu/smartivity-reference/data/references"
     all_refereces = os.listdir(references_folder)
     image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
     ref_image_files = [f for f in all_refereces if any(f.lower().endswith(ext) for ext in image_extensions)]
 
-
-    st_time = time.time()
     input_file = request.files['input_image']
-    # ref_file = request.files['ref_image']
-    print("time to download00000000000: ", time.time()-st_time)
 
     print("11111111111")
 
@@ -42,19 +35,11 @@ def helper():
 
     print("2222222222")
 
-    # print(type(ref_file))
-    # print(ref_file.filename)
-    # ref_filename = os.path.join(app.config['UPLOAD_FOLDER'], ref_file.filename)
-    # ref_file.save(ref_filename)
-
-    print("3333333333")
-
     total_time = 0.0
     max_matches = 0
     best_match = "no reference"
 
     for idx, image_file in enumerate(ref_image_files):
-        print(str(idx) + "\n")
         ref_filename = os.path.join(references_folder, image_file)
         time_taken, good_matches = cuda_orb_match(input_filename, ref_filename)
 
@@ -65,18 +50,12 @@ def helper():
             best_match = ref_filename
 
 
-    print("4444444444")
+    print("33333333")
 
-    print("Timeeeeeeee: ", total_time)
-    print("Matchessssss: ", len(good_matches))
-    print("doneeeeee")
+    print("Doneeeee      Timeeeeeeee: ", total_time)
     return jsonify(best_match)
-    # return send_from_directory(app.config['UPLOAD_FOLDER'], file.filename)
-
-
 
 def cuda_orb_match(input_img_path, reference_img_path):
-    print("5555555555")
     print(input_img_path)
     print(reference_img_path)
     img1 = cv.imread(input_img_path, cv.IMREAD_GRAYSCALE)
@@ -114,7 +93,7 @@ def cuda_orb_match(input_img_path, reference_img_path):
 
     time_taken_detect_describe = end_time_detect_describe - start_time_detect_describe
 
-    print("time taken describe", time_taken_detect_describe)
+    # print("time taken describe", time_taken_detect_describe)
 
     # Time to match
     start_time_match = time.time()
@@ -135,7 +114,7 @@ def cuda_orb_match(input_img_path, reference_img_path):
 
     time_taken_match = end_time_match - start_time_match
 
-    print(time_taken_detect_describe, time_taken_match)
+    # print(time_taken_detect_describe, time_taken_match)
 
     # Draw the matches
     # img_matches = cv.drawMatches(img1, keypoints1, img2, keypoints2, good_matches, None)
