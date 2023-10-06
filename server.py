@@ -21,43 +21,70 @@ def index():
 @app.route('/process', methods=['GET', 'POST'])
 def helper():
     print("inside server")
+    references_folder= "/home/ubuntu/smartivity-reference/data/references"
+    all_refereces = os.listdir(references_folder)
+    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
+    ref_image_files = [f for f in all_refereces if any(f.lower().endswith(ext) for ext in image_extensions)]
+
+
+    st_time = time.time()
     input_file = request.files['input_image']
-    ref_file = request.files['ref_image']
+    # ref_file = request.files['ref_image']
+    print("time to download00000000000: ", time.time()-st_time)
 
     print("11111111111")
 
     print(type(input_file))
     print(input_file.filename)
     input_filename = os.path.join(app.config['UPLOAD_FOLDER'], input_file.filename)
-    input_file.save(input_filename)
+    if not os.path.exists(input_filename):
+        input_file.save(input_filename)
 
     print("2222222222")
 
-    print(type(ref_file))
-    print(ref_file.filename)
-    ref_filename = os.path.join(app.config['UPLOAD_FOLDER'], ref_file.filename)
-    ref_file.save(ref_filename)
+    # print(type(ref_file))
+    # print(ref_file.filename)
+    # ref_filename = os.path.join(app.config['UPLOAD_FOLDER'], ref_file.filename)
+    # ref_file.save(ref_filename)
 
     print("3333333333")
 
-    time_taken, good_matches = cuda_orb_match(input_filename, ref_filename)
+    total_time = 0.0
+    max_matches = 0
+    best_match = "no reference"
+
+    for idx, image_file in enumerate(ref_image_files):
+        print(str(idx) + "\n")
+        ref_filename = os.path.join(references_folder, image_file)
+        time_taken, good_matches = cuda_orb_match(input_filename, ref_filename)
+
+        total_time += time_taken
+
+        if max_matches < len(good_matches):
+            max_matches = len(good_matches)
+            best_match = ref_filename
+
 
     print("4444444444")
-    
-    print("Timeeeeeeee: ", time_taken)
-    print("Matchessssss: ", good_matches)
+
+    print("Timeeeeeeee: ", total_time)
+    print("Matchessssss: ", len(good_matches))
     print("doneeeeee")
-    return jsonify((time_taken, good_matches))
+    return jsonify(best_match)
     # return send_from_directory(app.config['UPLOAD_FOLDER'], file.filename)
 
 
 
 def cuda_orb_match(input_img_path, reference_img_path):
+    print("5555555555")
+    print(input_img_path)
+    print(reference_img_path)
     img1 = cv.imread(input_img_path, cv.IMREAD_GRAYSCALE)
     img2 = cv.imread(reference_img_path, cv.IMREAD_GRAYSCALE)
 
     # Ensure the images are not empty
-    assert img1 is not None and img2 is not None, "Could not read the images."
+    assert img1 is not None, "could not read image 1"
+    assert img2 is not None, "Could not read the image 2."
 
     # Assuming the images are already loaded as 'img1' and 'img2'
 
@@ -115,7 +142,7 @@ def cuda_orb_match(input_img_path, reference_img_path):
 
     # cv.imwrite("matches_img.jpg",img_matches)
 
-    return (time_taken_match, good_matches)
+    return (time_taken_match+time_taken_detect_describe, good_matches)
 
 
 
