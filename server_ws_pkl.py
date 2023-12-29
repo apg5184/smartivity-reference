@@ -1,13 +1,14 @@
-from email import message
-from flask import Flask, jsonify, request
-import os
-import cv2 as cv
-import time
-import base64
-import pickle
-import json
 import asyncio
+import base64
+import json
+import os
+import pickle
+import time
+from email import message
+
+import cv2 as cv
 import websockets
+from flask import Flask, jsonify, request
 from websockets.exceptions import ConnectionClosedOK
 
 print("yesssssssssssss!!!!!!!!!!!!")
@@ -33,6 +34,19 @@ with open(descriptor_file, 'rb') as f:
         init_len = len(desc_data)
     except EOFError:
         desc_data = {}
+
+heights_file = os.path.join(root_dir, "heights.pkl")
+widths_file = os.path.join(root_dir, "widths.pkl")
+if not os.path.exists(heights_file):
+    with open(heights_file, 'wb') as f:
+        pickle.dump({}, f)
+if not os.path.exists(widths_file):
+    with open(widths_file, 'wb') as f:
+        pickle.dump({}, f)
+with open(heights_file, 'rb') as f:
+    heights_data = pickle.load(f)
+with open(widths_file, 'rb') as f:
+    widths_data = pickle.load(f)
 
 async def handle_client(websocket, path):
     references_folder= os.path.join(root_dir, "data/references")
