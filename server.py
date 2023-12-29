@@ -1,7 +1,9 @@
-from flask import Flask, jsonify, request
 import os
-import cv2 as cv
+import pickle
 import time
+
+import cv2 as cv
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key'
@@ -17,6 +19,19 @@ def index():
     return "Server works!!!"
 
 @app.route('/process', methods=['GET', 'POST'])
+root_dir = os.path.dirname(os.path.abspath(__file__))
+heights_file = os.path.join(root_dir, "heights.pkl")
+widths_file = os.path.join(root_dir, "widths.pkl")
+if not os.path.exists(heights_file):
+    with open(heights_file, 'wb') as f:
+        pickle.dump({}, f)
+if not os.path.exists(widths_file):
+    with open(widths_file, 'wb') as f:
+        pickle.dump({}, f)
+with open(heights_file, 'rb') as f:
+    heights_data = pickle.load(f)
+with open(widths_file, 'rb') as f:
+    widths_data = pickle.load(f)
 def helper():
     references_folder= "/home/ubuntu/smartivity-reference/data/references"
     all_refereces = os.listdir(references_folder)
@@ -60,6 +75,15 @@ def cuda_orb_match(input_img_path, reference_img_path):
     print(reference_img_path)
     img1 = cv.imread(input_img_path, cv.IMREAD_GRAYSCALE)
     img2 = cv.imread(reference_img_path, cv.IMREAD_GRAYSCALE)
+    input_image_basename = os.path.basename(input_filename)
+    if input_image_basename not in heights_data or input_image_basename not in widths_data:
+        img1 = cv.imread(input_filename)
+        heights_data[input_image_basename] = img1.shape[0]
+        widths_data[input_image_basename] = img1.shape[1]
+        with open(heights_file, 'wb') as f:
+            pickle.dump(heights_data, f)
+        with open(widths_file, 'wb') as f:
+            pickle.dump(widths_data, f)
 
     # Ensure the images are not empty
     assert img1 is not None, "could not read image 1"
@@ -99,6 +123,19 @@ def cuda_orb_match(input_img_path, reference_img_path):
     start_time_match = time.time()
 
     # Matching descriptors using BFMatcher (Brute Force Matcher)
+    ref_image_basename = os.path.basename(reference_img_path)
+    if ref_image_basename not in heights_data or ref_image_basename not in widths_data:
+        img2 = cv.imread(reference_img_path)
+        heights_data[ref_image_basename] = img2.shape[0]
+        widths_data[ref_image_basename] = img2.shape[1]
+        with open(heights_file, 'wb') as f:
+            pickle.dump(heights_data, f)
+        with open(widths_file, 'wb') as f:
+            pickle.dump(widths_data, f)
+    h1, w1 = heights_data[input_image_basename], widths_data[input_image_basename]
+    h2, w2 = heights_data[ref_image_basename], widths_data[ref_image_basename]
+    if h1/h2 > 1.5 or w1/w2 > 1.5:
+        return (0, 0)
     bf = cv.BFMatcher(cv.NORM_HAMMING)
     knn_matches = bf.knnMatch(descriptors1, descriptors2, k=2)
 
