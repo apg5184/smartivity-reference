@@ -1,14 +1,28 @@
-from email import message
-from flask import Flask, jsonify, request
-import os
-import cv2 as cv
-import time
-import base64
-import pickle
-import json
 import asyncio
+import base64
+import json
+import os
+import pickle
+import time
+from email import message
+
+import cv2 as cv
 import websockets
+from flask import Flask, jsonify, request
 from websockets.exceptions import ConnectionClosedOK
+
+heights_file = os.path.join(root_dir, "heights.pkl")
+widths_file = os.path.join(root_dir, "widths.pkl")
+if not os.path.exists(heights_file):
+    with open(heights_file, 'wb') as f:
+        pickle.dump({}, f)
+if not os.path.exists(widths_file):
+    with open(widths_file, 'wb') as f:
+        pickle.dump({}, f)
+with open(heights_file, 'rb') as f:
+    heights_data = pickle.load(f)
+with open(widths_file, 'rb') as f:
+    widths_data = pickle.load(f)
 
 print("yesssssssssssss!!!!!!!!!!!!")
 print(cv.cuda.getCudaEnabledDeviceCount())
@@ -150,6 +164,30 @@ def cuda_orb_match(input_img_path, reference_img_path):
 
     
     if input_image_basename not in desc_data:
+    with open(heights_file, 'rb') as f:
+        heights_data = pickle.load(f)
+    with open(widths_file, 'rb') as f:
+        widths_data = pickle.load(f)
+    if input_image_basename not in heights_data or input_image_basename not in widths_data:
+        img1 = cv.imread(input_img_path)
+        heights_data[input_image_basename] = img1.shape[0]
+        widths_data[input_image_basename] = img1.shape[1]
+        with open(heights_file, 'wb') as f:
+            pickle.dump(heights_data, f)
+        with open(widths_file, 'wb') as f:
+            pickle.dump(widths_data, f)
+    if ref_image_basename not in heights_data or ref_image_basename not in widths_data:
+        img2 = cv.imread(reference_img_path)
+        heights_data[ref_image_basename] = img2.shape[0]
+        widths_data[ref_image_basename] = img2.shape[1]
+        with open(heights_file, 'wb') as f:
+            pickle.dump(heights_data, f)
+        with open(widths_file, 'wb') as f:
+            pickle.dump(widths_data, f)
+    h1, w1 = heights_data[input_image_basename], widths_data[input_image_basename]
+    h2, w2 = heights_data[ref_image_basename], widths_data[ref_image_basename]
+    if h1/h2 > 1.5 or w1/w2 > 1.5:
+        return (0, 0)
         img1 = cv.imread(input_img_path, cv.IMREAD_GRAYSCALE)
 
         # Ensure the images are not empty
